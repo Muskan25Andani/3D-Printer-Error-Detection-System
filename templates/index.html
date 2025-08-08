@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🖨️ 3D Printer Error Detection</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --primary-dark: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            --secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --warning: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --error: linear-gradient(135deg, #fc466b 0%, #3f5efb 100%);
+            --dark: #1a202c;
+            --dark-light: #2d3748;
+            --text: #e2e8f0;
+            --text-muted: #a0aec0;
+            --border: #4a5568;
+            --shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+            --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            --glow: 0 0 20px rgba(102, 126, 234, 0.4);
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            z-index: 1;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 300px; height: 300px;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.2) 0%, transparent 70%);
+            border-radius: 50%; z-index: -1;
+            animation: pulse 3s ease-in-out infinite;
+        }
+        @keyframes pulse {
+          0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+          50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.8; }
+        }
+        .header h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            animation: textGlow 2s ease-in-out infinite alternate;
+        }
+        @keyframes textGlow {
+            from { filter: drop-shadow(0 0 5px rgba(102, 126, 234, 0.5)); }
+            to { filter: drop-shadow(0 0 20px rgba(102, 126, 234, 0.8)); }
+        }
+        .header p { font-size: 1.3rem; color: var(--text-muted); font-weight: 400; letter-spacing: 0.5px; }
+        .model-status {
+            background: rgba(76, 175, 80, 0.1);
+            color: #4caf50;
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin: 1rem auto 0;
+            display: inline-block;
+            animation: fadeIn 1s ease-out 0.5s both;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .card {
+            background: rgba(45, 55, 72, 0.9);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+            position: relative;
+        }
+        .card h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #f7fafc;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .input-group { margin-bottom: 1.5rem; }
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 1rem 1.2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: var(--text);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+            transform: scale(1.02);
+        }
+        .input-group input::placeholder {
+            color: var(--text-muted);
+        }
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 1.5rem;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        .btn:hover { background: var(--primary-dark); transform: translateY(-3px); box-shadow: 0 15px 30px rgba(102, 126, 234, 0.4);}
+        /* Messages */
+        .message { padding: 1rem 1.5rem; border-radius: 12px; margin: 1rem 0; font-weight: 500; }
+        .success-message {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(56, 161, 105, 0.2));
+            border: 1px solid rgba(76, 175, 80, 0.5); color: #4caf50;
+        }
+        .error-message {
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.2), rgba(211, 47, 47, 0.2));
+            border: 1px solid rgba(244, 67, 54, 0.5); color: #f44336;
+        }
+        /* Results section */
+        .results-section { margin: 2rem 0 0 0; }
+        .results-card {
+            background: rgba(45, 55, 72, 0.95);
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: var(--shadow);
+        }
+        .results-card h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            color: #f7fafc;
+            text-align: center;
+        }
+        .prediction-result {
+            text-align: center;
+            padding: 2rem;
+            border-radius: 16px;
+            margin: 2rem 0;
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+        .prediction-no-error {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(56, 161, 105, 0.2));
+            border: 2px solid rgba(76, 175, 80, 0.5); color: #4caf50;
+        }
+        .prediction-error {
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.2), rgba(211, 47, 47, 0.2));
+            border: 2px solid rgba(244, 67, 54, 0.5); color: #f44336;
+        }
+        .result-details {margin-top: 2rem; padding: 1.5rem; background: rgba(255,255,255,0.05); border-radius: 16px;}
+        .confidence-bar-bg { height: 10px; background: #444; border-radius: 5px; overflow: hidden; }
+        .confidence-bar-fill { height: 10px; border-radius: 5px; background: var(--primary); transition: width 0.6s; }
+        .input-summary {
+            display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin: 1rem 0;
+        }
+        .input-value {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .input-label { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem;}
+        .input-number { font-size: 1.2rem; font-weight: 600; color: #667eea;}
+        .model-info {
+            background: rgba(102,126,234,0.1); color: #667eea; padding: 1rem;
+            border-radius: 12px; border: 1px solid rgba(102,126,234,0.3); margin-top: 1rem; text-align: center;
+        }
+        @media (max-width: 768px) {
+            .container { padding: 1rem; }
+            .header h1 { font-size: 2.5rem; }
+            .card, .results-card { padding: 1.2rem; }
+            .input-summary { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 480px) {
+            .header h1 { font-size: 2rem;}
+            .header p { font-size: 1.1rem;}
+            .btn { padding: 0.8rem 1.5rem; font-size: 1rem;}
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <header class="header">
+            <h1><i class="fas fa-cube"></i> 3D Printer Error Detection System</h1>
+            <p><i class="fas fa-robot"></i> AI-powered fault detection for 3D printing operations</p>
+            <div class="model-status">
+                <i class="fas fa-brain"></i> Model loaded and ready
+            </div>
+        </header>
+
+        <!-- PREDICTION FORM -->
+        <section class="card">
+            <h2><i class="fas fa-magic"></i> Make Prediction</h2>
+            <form method="POST" autocomplete="off">
+                <div class="input-group">
+                    <label for="x_input"><i class="fas fa-arrows-alt-h"></i> X-Direction (m/s²):</label>
+                    <input type="number" step="0.01" id="x_input" name="x_input"
+                        value="{{ input_values[0] if input_values else '' }}" placeholder="Enter X-direction acceleration" required>
+                </div>
+                <div class="input-group">
+                    <label for="y_input"><i class="fas fa-arrows-alt-v"></i> Y-Direction (m/s²):</label>
+                    <input type="number" step="0.01" id="y_input" name="y_input"
+                        value="{{ input_values[1] if input_values else '' }}" placeholder="Enter Y-direction acceleration" required>
+                </div>
+                <div class="input-group">
+                    <label for="z_input"><i class="fas fa-sort-amount-up"></i> Z-Direction (m/s²):</label>
+                    <input type="number" step="0.01" id="z_input" name="z_input"
+                        value="{{ input_values[2] if input_values else '' }}" placeholder="Enter Z-direction acceleration" required>
+                </div>
+                <button class="btn" type="submit"><i class="fas fa-search"></i> Predict Error</button>
+            </form>
+            {% if prediction and not prediction.startswith("Error") %}
+                <div class="success-message message"><i class="fas fa-check-circle"></i> Prediction completed!</div>
+            {% elif prediction and prediction.startswith("Error") %}
+                <div class="error-message message"><i class="fas fa-exclamation-circle"></i> {{ prediction }}</div>
+            {% endif %}
+        </section>
+
+        <!-- RESULTS -->
+        {% if prediction and not prediction.startswith("Error") %}
+        <section class="results-section" id="resultsSection">
+            <div class="results-card">
+                <h2><i class="fas fa-bullseye"></i> Prediction Result</h2>
+                <div id="predictionResult">
+                    <div class="prediction-result
+                        {% if prediction == 'YES' %}
+                            prediction-error
+                        {% else %}
+                            prediction-no-error
+                        {% endif %}
+                    ">
+                        {% if prediction == 'YES' %}
+                           <i class="fas fa-exclamation-triangle"></i> ERROR DETECTED
+                        {% else %}
+                           <i class="fas fa-check-circle"></i> NO ERROR DETECTED
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="result-details">
+                    <h3 style="color: var(--text-muted); margin-bottom: 1rem; text-align: center;">
+                        <i class="fas fa-info-circle"></i> Prediction Details
+                    </h3>
+                    {% if input_values %}
+                    <div class="input-summary">
+                        <div class="input-value">
+                            <div class="input-label">X-Direction</div>
+                            <div class="input-number">{{ input_values[0] | round(3) }}</div>
+                        </div>
+                        <div class="input-value">
+                            <div class="input-label">Y-Direction</div>
+                            <div class="input-number">{{ input_values[1] | round(3) }}</div>
+                        </div>
+                        <div class="input-value">
+                            <div class="input-label">Z-Direction</div>
+                            <div class="input-number">{{ input_values[2] | round(3) }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <!-- Optionally add confidence and model info if passed by Flask -->
+                    {#
+                    <div style="text-align:center; margin:1.5rem 0;">
+                        <div style="color: var(--text-muted); margin-bottom: 0.5rem;">Prediction Confidence</div>
+                        <div class="confidence-bar-bg">
+                        <div class="confidence-bar-fill" style="width: {{ confidence | default(100) }}%;"></div>
+                        </div>
+                        <div style="color:var(--text); margin-top:0.5rem; font-weight:600;">{{ confidence | default(100) }}%</div>
+                    </div>
+                    <div class="model-info">
+                        <i class="fas fa-robot"></i> 
+                        <strong>Model:</strong> {{ model_name | default('N/A') }}
+                    </div>
+                    #}
+                </div>
+            </div>
+        </section>
+        {% endif %}
+    </div>
+</body>
+</html>
